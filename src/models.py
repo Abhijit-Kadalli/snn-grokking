@@ -42,13 +42,13 @@ class GrokkingSNN(nn.Module):
                               learn_beta=True, learn_threshold=True, 
                               spike_grad=spike_grad, reset_mechanism="none") # None for output layer potential
 
-    def forward(self, x):
+    def forward(self, x, return_dynamics=False):
         # Clamp parameters to valid ranges to prevent instability
         with torch.no_grad():
-            self.lif1.beta.clamp_(0.0, 1.0)
-            self.lif2.beta.clamp_(0.0, 1.0)
-            self.lif1.threshold.clamp_(min=0.01)
-            self.lif2.threshold.clamp_(min=0.01)
+            self.lif1.beta.clamp_(0.1, 0.9)
+            self.lif2.beta.clamp_(0.1, 0.9)
+            self.lif1.threshold.clamp_(min=0.1)
+            self.lif2.threshold.clamp_(min=0.1)
 
         # x is [batch, 2]
         # Input Coding: Constant Current Injection
@@ -60,7 +60,10 @@ class GrokkingSNN(nn.Module):
         mem1 = self.lif1.init_leaky()
         mem2 = self.lif2.init_leaky()
         
-        # Record membrane potentials of the output layer
+        # Record dynamics
+        spk1_rec = []
+        mem1_rec = []
+        spk2_rec = []
         mem2_rec = []
 
         for step in range(self.num_steps):
@@ -70,7 +73,14 @@ class GrokkingSNN(nn.Module):
             cur2 = self.fc2(spk1)
             spk2, mem2 = self.lif2(cur2, mem2)
             
+            if return_dynamics:
+                spk1_rec.append(spk1)
+                mem1_rec.append(mem1)
+                spk2_rec.append(spk2)
             mem2_rec.append(mem2)
+
+        if return_dynamics:
+            return torch.stack(spk1_rec), torch.stack(mem1_rec), torch.stack(spk2_rec), torch.stack(mem2_rec)
 
         # Output Decoding: Last Membrane Potential (Temporal/Potential coding)
         # This provides a smoother gradient than rate-based spike counting

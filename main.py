@@ -20,6 +20,10 @@ def run_experiment(p=113, train_frac=0.3, num_epochs=15000, device="cpu"):
     snn_model = GrokkingSNN(p=p, hidden_dim=128, num_steps=15)
     snn_history = train_model(snn_model, train_loader, test_loader, num_epochs=num_epochs, weight_decay=1.0, device=device)
     
+    # Save the trained SNN model
+    torch.save(snn_model.state_dict(), "models/snn_final.pth")
+    print("\nSaved SNN model to models/snn_final.pth")
+
     # 3. Plot Results
     plot_results(mlp_history, snn_history)
 
@@ -57,4 +61,4 @@ if __name__ == "__main__":
     # Reducing epochs for a quick verification if needed, 
     # but the proposal asks for the full experiment.
     # We will use 10k epochs as a baseline.
-    run_experiment(p=113, train_frac=0.3, num_epochs=5000, device=device)
+    run_experiment(p=113, train_frac=0.4, num_epochs=10000, device=device)
